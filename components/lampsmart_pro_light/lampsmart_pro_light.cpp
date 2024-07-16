@@ -6,21 +6,25 @@
 #include <esp_gap_ble_api.h>
 #include <esp_gatts_api.h>
 #include <mbedtls/aes.h>
+#include <freertos/queue.h>
 
 namespace esphome {
 namespace lampsmartpro {
 
 static const char *TAG = "lampsmartpro";
 
-#pragma pack(1)
+const size_t MAX_PACKET_LEN = 31;
+
+#pragma pack(push, 1)
 typedef union {
-  struct { /* Advertising Data */
+  struct { /* Advertising Data for version 2/3*/
     uint8_t prefix[10];
     uint8_t packet_number;
     uint16_t type;
-    uint32_t identifier;
-    uint8_t var2;
-    uint16_t command;
+    uint32_t group_id;
+    uint8_t group_index;
+    uint8_t command;
+    uint8_t _19;
     uint16_t _20;
     uint8_t channel1;
     uint8_t channel2;
@@ -29,8 +33,27 @@ typedef union {
     uint16_t rand;
     uint16_t crc16;
   };
-  uint8_t raw[31];
-} adv_data_t;
+  uint8_t raw[MAX_PACKET_LEN];
+} adv_data_v3_t;
+
+typedef union {
+  struct { /* Advertising Data for version 1*/
+    uint8_t prefix[8];
+    uint8_t command;
+    uint16_t group_idx;
+    uint8_t channel1;
+    uint8_t channel2;
+    uint8_t channel3;
+    uint8_t tx_count;
+    uint8_t outs;
+    uint8_t src;
+    uint8_t r2;
+    uint16_t seed;
+    uint16_t crc16;
+  };
+  uint8_t raw[22];
+} adv_data_v1_t;
+#pragma pack(pop)
 
 static esp_ble_adv_params_t ADVERTISING_PARAMS = {
   .adv_int_min = 0x20,
@@ -65,7 +88,7 @@ static uint8_t XBOXES[128] = {
   0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 };
 
-void ble_whiten(uint8_t *buf, uint8_t size, uint8_t seed, uint8_t salt) {
+void v2_whiten(uint8_t *buf, uint8_t size, uint8_t seed, uint8_t salt) {
   for (uint8_t i = 0; i < size; ++i) {
     buf[i] ^= XBOXES[(seed + i + 9) & 0x1f + (salt & 0x3) * 0x20];
     buf[i] ^= seed;
@@ -87,11 +110,39 @@ uint16_t v2_crc16_ccitt(uint8_t *src, uint8_t size, uint16_t crc16_result) {
   return crc16_result;
 }
 
+void ble_whiten(uint8_t *buf, size_t start, size_t len, uint8_t seed) {
+  uint8_t r = seed;
+  for (size_t i=0; i < start+len; i++) {
+    uint8_t b = 0;
+    for (size_t j=0; j < 8; j++) {
+      r <<= 1;
+      if (r & 0x80) {
+        r ^= 0x11;
+        b |= 1 << j;
+      }
+      r &= 0x7F;
+    }
+    if (i >= start) {
+      buf[i - start] ^= b;
+    }
+    //ESP_LOGD(TAG, "%0x", b);
+  }
+}
+
+uint8_t reverse_byte(uint8_t x) {
+
+  x = ((x & 0x55) << 1) | ((x & 0xAA) >> 1);
+  x = ((x & 0x33) << 2) | ((x & 0xCC) >> 2);
+  x = ((x & 0x0F) << 4) | ((x & 0xF0) >> 4);
+  return x;
+}
+
 void LampSmartProLight::setup() {
 #ifdef USE_API
   register_service(&LampSmartProLight::on_pair, light_state_ ? "pair_" + light_state_->get_object_id() : "pair");
   register_service(&LampSmartProLight::on_unpair, light_state_ ? "unpair_" + light_state_->get_object_id() : "unpair");
 #endif
+  this->queue_ = this->parent_;
 }
 
 light::LightTraits LampSmartProLight::get_traits() {
@@ -142,7 +193,7 @@ void LampSmartProLight::dump_config() {
   ESP_LOGCONFIG(TAG, "  Warm White Temperature: %f mireds", warm_white_temperature_);
   ESP_LOGCONFIG(TAG, "  Constant Brightness: %s", constant_brightness_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Minimum Brightness: %d", min_brightness_);
-  ESP_LOGCONFIG(TAG, "  Transmission Duratoin: %d millis", tx_duration_);
+  ESP_LOGCONFIG(TAG, "  Transmission Duration: %d millis", tx_duration_);
 }
 
 void LampSmartProLight::on_pair() {
@@ -176,32 +227,205 @@ void sign_packet_v3(adv_data_t* packet) {
   }
 }
 
-void LampSmartProLight::send_packet(uint16_t cmd, uint8_t cold, uint8_t warm) {
+void sign_packet_v3(adv_data_v3_t* packet) {
+  uint16_t seed = packet->rand;
+  uint8_t sigkey[16] = {0, 0, 0, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16};
+  uint8_t tx_count = (uint8_t) packet->packet_number;
+
+  sigkey[0] = seed & 0xff;
+  sigkey[1] = (seed >> 8) & 0xff;
+  sigkey[2] = tx_count;
+  mbedtls_aes_context aes_ctx;
+  mbedtls_aes_init(&aes_ctx);
+  mbedtls_aes_setkey_enc(&aes_ctx, sigkey, sizeof(sigkey)*8);
+  uint8_t aes_in[16], aes_out[16];
+  memcpy(aes_in, &(packet->raw[8]), 16);
+  mbedtls_aes_crypt_ecb(&aes_ctx, ESP_AES_ENCRYPT, aes_in, aes_out);
+  mbedtls_aes_free(&aes_ctx);
+  packet->signature_v3 = ((uint16_t*) aes_out)[0]; 
+  if (packet->signature_v3 == 0) {
+      packet->signature_v3 = 0xffff;
+  }
+}
+
+size_t LampSmartProCommand::build_packet_v3(uint8_t* buf) {
   uint16_t seed = (uint16_t) rand();
 
-  adv_data_t packet = {{
+  adv_data_v3_t *packet = (adv_data_v3_t*)buf;
+  *packet = (adv_data_v3_t) {{
       .prefix = {0x02, 0x01, 0x02, 0x1B, 0x16, 0xF0, 0x08, 0x10, 0x80, 0x00},
-      .packet_number = ++(this->tx_count_),
-      .type = 0x100,
-      .identifier = light_state_ ? light_state_->get_object_id_hash() : 0xcafebabe,
-      .var2 = 0x0,
-      .command = cmd,
+      .packet_number = this->tx_count_,
+      .type = DEVICE_TYPE_LAMP,
+      .group_id = this->identifier_,
+      .group_index = 0,
+      .command = this->cmd_,
+      ._19 = 0,
       ._20 = 0,
-      .channel1 = reversed_ ? warm : cold,
-      .channel2 = reversed_ ? cold : warm,
+      .channel1 = this->par1_,
+      .channel2 = this->par2_,
       .signature_v3 = 0,
       ._26 = 0,
       .rand = seed,
   }};
 
-  sign_packet_v3(&packet);
-  ble_whiten(&packet.raw[9], 0x12, (uint8_t) seed, 0);
-  packet.crc16 = v2_crc16_ccitt(&packet.raw[7], 0x16, ~seed);
+  if (this->variant_ == VARIANT_3) {
+    sign_packet_v3(packet);
+  }
+  v2_whiten(&packet->raw[9], 0x12, (uint8_t) seed, 0);
+  packet->crc16 = v2_crc16_ccitt(&packet->raw[7], 0x16, ~seed);
   
-  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_config_adv_data_raw(packet.raw, sizeof(packet)));
-  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_start_advertising(&ADVERTISING_PARAMS));
-  delay(tx_duration_);
-  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_stop_advertising());
+  return sizeof(*packet);
+}
+size_t LampSmartProCommand::build_packet_v1(uint8_t* buf, size_t base) {
+  uint16_t seed = (uint16_t) rand() % 65525;
+
+  adv_data_v1_t *packet = (adv_data_v1_t*)&buf[base];
+  *packet = (adv_data_v1_t) {{
+      .prefix = {0xAA, 0x98, 0x43, 0xAF, 0x0B, 0x46, 0x46, 0x46},
+      .command = this->cmd_,
+      .group_idx = static_cast<uint16_t>(this->identifier_ & 0xF0FF), // group_index is zero for now
+      .channel1 = this->par1_,
+      .channel2 = this->par2_,
+      .channel3 = 0,
+      .tx_count = this->tx_count_,
+      .outs = 0,
+      .src = static_cast<uint8_t>(seed ^ 1), //
+      .r2 = static_cast<uint8_t>(seed ^ 1),  // mimics IR remote behavior
+      .seed = htons(seed),
+      .crc16 = 0,
+  }};
+
+  if (this->cmd_ == CMD_PAIR) {
+    packet->channel1 = static_cast<uint8_t>(packet->group_idx & 0xFF);
+    packet->channel2 = static_cast<uint8_t>(packet->group_idx >> 8);
+    packet->channel3 = 0x81;
+  }
+
+  packet->crc16 = htons(v2_crc16_ccitt(&packet->raw[8], 12, ~seed));
+  
+  return sizeof(*packet);
+}
+
+size_t LampSmartProCommand::build_packet_v1a(uint8_t* buf) {
+
+  uint8_t header[] = {0x02, 0x01, 0x02, 0x1B, 0x03, 0x77, 0xF8};
+  const size_t base = 7;
+  const size_t size = 31;
+  
+  for (size_t i=0; i<sizeof(header); i++) {
+    buf[i] = header[i];
+  }
+  build_packet_v1(buf, base);
+  
+  uint16_t* crc16_2 = (uint16_t*) &buf[29];
+  *crc16_2 = htons(v2_crc16_ccitt(&buf[base+8], 14, v2_crc16_ccitt(&buf[base+1], 5, 0xffff)));
+  for (size_t i=base; i < size; i++) {
+    buf[i] = reverse_byte(buf[i]);
+  }
+  ble_whiten(&buf[base], 8+base, size-base, 83);
+  
+  return size;
+}
+
+size_t LampSmartProCommand::build_packet_v1b(uint8_t* buf) {
+
+  uint8_t header[] = {0x02, 0x01, 0x02, 0x1B, 0x03, 0xF9, 0x08, 0x49};
+  const size_t base = 8;
+  const size_t size = 31;
+  
+  for (size_t i=0; i<sizeof(header); i++) {
+    buf[i] = header[i];
+  }
+  build_packet_v1(buf, base);
+  
+  buf[30] = 0xaa;
+  for (size_t i=base; i < size; i++) {
+    buf[i] = reverse_byte(buf[i]);
+  }
+  ble_whiten(&buf[base], 8+base, size-base, 83);
+  
+  return size;
+}
+
+size_t LampSmartProCommand::build_packet(uint8_t* buf) {
+  size_t plen = 0;
+  
+  switch (this->variant_) {
+    case VARIANT_3:
+    case VARIANT_2:
+      plen = this->build_packet_v3(buf);
+      break;
+    case VARIANT_1A:
+      plen = this->build_packet_v1a(buf);
+      break;
+    case VARIANT_1B:
+      plen = this->build_packet_v1b(buf);
+      break;
+  }
+  
+  return plen;
+} 
+
+void LampSmartProLight::send_packet(uint16_t cmd, uint8_t cold, uint8_t warm) {
+
+  if (++this->tx_count_ == 0) {
+    this->tx_count_ = 1;
+  }
+
+  uint32_t identifier = light_state_ ? light_state_->get_object_id_hash() : 0xcafebabe;
+  LampSmartProCommand *command = new LampSmartProCommand(this->variant_, identifier, cmd);
+  command->set_par1(this->reversed_ ? warm : cold);
+  command->set_par2(this->reversed_ ? cold : warm);
+  command->set_tx_count(this->tx_count_);
+  command->set_tx_duration(this->tx_duration_);
+  
+  this->queue_->put(command);
+}
+
+const size_t MAX_QUEUE_LEN = 10;
+
+LampSmartProQueue::LampSmartProQueue(void) {
+  this->commands_ = xQueueCreate(MAX_QUEUE_LEN, sizeof(LampSmartProCommand *));
+}
+
+void LampSmartProQueue::put(LampSmartProCommand* command) {
+  if (xQueueSend(this->commands_, &command, 0) != pdTRUE) {
+    ESP_LOGE(TAG, "Error putting command to queue");
+  }
+}
+
+void LampSmartProQueue::loop() {
+
+  static LampSmartProCommand *command;
+  if (!this->parent_->is_active()) {
+    ESP_LOGD(TAG, "Cannot proceed while ESP32BLE is disabled.");
+    return;
+  }
+  if (this->advertising_) {
+    if (millis() - this->op_start_ > this->tx_duration_) {
+      this->advertising_ = false;
+      ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_stop_advertising());
+      ESP_LOGD(TAG, "Advertising stop");
+    } else {
+      return;
+    }
+  }
+  
+  if (xQueueReceive(this->commands_, &command, 0) == pdTRUE) {
+    uint8_t packet[MAX_PACKET_LEN];
+    size_t packet_len = command->build_packet(packet);
+    ESP_LOGD(TAG, "Prepared packet: %s", esphome::format_hex_pretty(packet, packet_len).c_str());
+    if (packet_len > 0) {
+      ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_config_adv_data_raw(packet, packet_len));
+      ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_start_advertising(&ADVERTISING_PARAMS));
+      ESP_LOGD(TAG, "Advertising start");
+      this->op_start_ = millis();
+      this->tx_duration_ = command->get_tx_duration();
+      this->advertising_ = true;
+    }
+
+    delete command;
+  }
 }
 
 } // namespace lampsmartpro

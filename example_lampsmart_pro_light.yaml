@@ -1,10 +1,27 @@
 external_components:
   # shorthand
-  source: github://aronsky/esphome-components
+  source: github://flicker581/esphome-lampsmart
+
+lampsmart_pro_light:
 
 light:
-  - platform: ble_adv_light
-    type: zhijia
-    name: Kitchen Light
-    duration: 750
+  - platform: lampsmart_pro_light
+    name: V3 light
+    duration: 200
+    # default:
+    #variant: v3
+  - platform: lampsmart_pro_light
+    name: V2 light
+    duration: 200
     default_transition_length: 0s
+    variant: v2
+  - platform: lampsmart_pro_light
+    name: V1a Light
+    duration: 200
+    default_transition_length: 0s
+    variant: v1a
+  - platform: lampsmart_pro_light
+    name: V1b Light
+    duration: 200
+    default_transition_length: 0s
+    variant: v1b
