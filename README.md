@@ -2,7 +2,17 @@
 
 Custom components for ESPHome
 
-## Lamps based on BLE Advertising
+## Lamps controlled by BLE Advertising
+
+Use this for various Chinese lamps that are controlled via BLE advertising packets. Supported apps:
+
+* LampSmart Pro (tested against Marpou Ceiling Light), including variant
+* FanLamp Pro (including Fan / multiple lights)
+* ZhiJia (tested against aftermarket LED drivers; only the latest version is currently supported)
+
+Details can be found [here](components/ble_adv_controller/README.md).
+
+## Lamps based on BLE Advertising (deprecated)
 
 Use this for various Chinese lamps that are controlled via BLE advertising packets. Supported apps:
 
