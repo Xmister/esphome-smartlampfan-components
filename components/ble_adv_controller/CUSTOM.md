@@ -50,7 +50,7 @@ To build the Manufacturer Data section corresponding to a command, the encodinf 
 
 # Custom Command Service
 if you are using 'api' component to communicate with HA, for each ble_adv_controller a HA service is available:
-* name of the service: **esphome: <device_name>_cmd_<ble_adv_controller_id>
+* name of the service: **esphome: <device_name>_cmd_<ble_adv_controller_id>**
 * ![screenshot](../../docs/images/BleAdvService.jpg)
 
 It uses as a bases the ble_adv_controller, and then its associated parameters and features (encoding, variant, identifier, transaction count). It allows to specify directly command parameters (type, index, cmd, arg0..3) skipping the 'Convert' part and processing the encoding from there (add controller params, Signing, CRC, Whitening and emitting command).
