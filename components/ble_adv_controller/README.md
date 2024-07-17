@@ -72,7 +72,7 @@ light:
 
 fan:
   - platform: ble_adv_controller
-    ble_adv_controller_id: salon_controller
+    ble_adv_controller_id: my_controller
     name: my fan
 
 button:

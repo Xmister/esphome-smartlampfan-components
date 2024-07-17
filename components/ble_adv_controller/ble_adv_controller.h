@@ -6,6 +6,7 @@
 #include "esphome/components/api/custom_api_device.h"
 #endif
 #include <esp_gap_ble_api.h>
+#include <queue>
 
 namespace esphome {
 namespace bleadvcontroller {
