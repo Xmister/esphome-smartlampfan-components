@@ -187,6 +187,9 @@ void FanLampController::build_packet_v1(uint8_t* buf, Command &cmd) {
     packet->channel2 = cmd.args_[1];
     packet->channel3 = cmd.args_[2];
   }
+  if (cmd.cmd_ == CommandType::FAN_SPEED && cmd.args_[1] == 6) {
+    packet->command = 0x32; // use Fan Gear instead of Fan Level
+  }
   packet->crc16 = htons(v2_crc16_ccitt(buf + 8, 12, ~seed));
 }
 
@@ -257,6 +260,9 @@ void FanLampController::build_packet_v2(uint8_t * buf, Command &cmd, bool with_s
       break;
     case CommandType::FAN_SPEED:
       packet->args[2] = cmd.args_[0];
+      if (cmd.args_[1] == 6) {
+        packet->args[1] = 0x20;
+      }
       break;
     case CommandType::FAN_DIR:
       packet->args[1] = !cmd.args_[0];

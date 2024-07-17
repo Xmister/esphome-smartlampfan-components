@@ -11,8 +11,8 @@ fan::FanTraits BleAdvFan::get_traits() {
   auto traits = fan::FanTraits();
 
   traits.set_direction(true);
-  traits.set_speed(true);
-  traits.set_supported_speed_count(3);
+  traits.set_speed(this->speed_count_ > 0);
+  traits.set_supported_speed_count(this->speed_count_);
   traits.set_oscillation(false);
 
   return traits;
@@ -29,7 +29,7 @@ void BleAdvFan::control(const fan::FanCall &call) {
   if (call.get_speed().has_value() && (this->speed != *call.get_speed())) {
     // Speed change OR Start at speed
     ESP_LOGD(TAG, "BleAdvFan::control - setup speed %d", *call.get_speed());
-    this->command(CommandType::FAN_SPEED, (uint8_t)*call.get_speed());
+    this->command(CommandType::FAN_SPEED, (uint8_t)*call.get_speed(), this->speed_count_);
     this->speed = *call.get_speed();
     this->state = true;
   }

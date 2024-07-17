@@ -64,6 +64,8 @@ light:
     # just test your lamp by decreasing the brightness percent by percent. 
     # when it switches off, you can find the 'cw' value in the logs, add 1 and you have your setting
     min_brightness: 21
+    # default_transition_length: this is a feature of esphome light to perform smooth transitions, but not adapted to this kind of lights. to be setup to 0s
+    default_transition_length: 0s
 
   - platform: ble_adv_controller
     ble_adv_controller_id: my_controller
@@ -74,6 +76,9 @@ fan:
   - platform: ble_adv_controller
     ble_adv_controller_id: my_controller
     name: my fan
+    # speed_count: the number of speed level available on your remote / app. Can be 0 / 3 / 6.
+    # if not properly setup the remote and this component does not behave properly together
+    speed_count: 6
 
 button:
   - platform: ble_adv_controller

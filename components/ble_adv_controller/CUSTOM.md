@@ -35,7 +35,7 @@ Supported Applications:
 * **Zhi jia**, only for the light part
 * **FanLamp Pro** / **LampSmart Pro**, for the light and fan part. Includes several encoding variant: v1a / v1b / v2 / v3
 
-To build the Manufacturer Data section corresponding to a command, the encodinf is done as follow:
+To build the Manufacturer Data section corresponding to a command, the encoding is done as follow:
 * Convert the command and its parameters into a base 26 bytes structure containing among other:
   * A **type**: a 2 bytes code. No one found out yet the use of it, seems to be always 0x0100 but can be set to anything it seems
   * An **index** / group_index: a 1 byte code allowing to identify sub entities. 0 for the main light, 1 for another light, ... (NOT TESTED YET)
@@ -50,8 +50,11 @@ To build the Manufacturer Data section corresponding to a command, the encodinf 
 
 # Custom Command Service
 if you are using 'api' component to communicate with HA, for each ble_adv_controller a HA service is available:
-* name of the service: **esphome: <device_name>_cmd_<ble_adv_controller_id>**
-* ![screenshot](../../docs/images/BleAdvService.jpg)
+* name of the service:
+```
+esphome: <device_name>_cmd_<ble_adv_controller_id>
+```
+![screenshot](../../docs/images/BleAdvService.jpg)
 
 It uses as a bases the ble_adv_controller, and then its associated parameters and features (encoding, variant, identifier, transaction count). It allows to specify directly command parameters (type, index, cmd, arg0..3) skipping the 'Convert' part and processing the encoding from there (add controller params, Signing, CRC, Whitening and emitting command).
 
@@ -77,9 +80,12 @@ For info here are the "known" commands already extracted from code and their cor
 | light_dim    | 0xAD, arg0  | N/A               | N/A ?             |
 | light_cct    | 0xAE, arg0  | N/A               | N/A ?             |
 | light_dimcct | N/A         | 0x21, arg0 arg1   | 0x21, arg2, arg3  |
-| fan_on       | N/A         | 0x31, arg0=0      | 0x31, arg2=0      |
-| fan_off      | N/A         | 0x31, arg0=0      | 0x31, arg2=0      |
-| fan_speed    | N/A         | 0x31, arg0=1..3   | 0x31, arg2=1..3   |
+| fan_on(3)    | N/A         | 0x31, arg0=0      | 0x31, arg2=0      |
+| fan_off(3)   | N/A         | 0x31, arg0=0      | 0x31, arg2=0      |
+| fan_speed(3) | N/A         | 0x31, arg0=1..3           | 0x31, arg2=1..3   |
+| fan_on(6)    | N/A         | 0x32, arg0=0, arg1=6      | 0x31, arg2=0, arg1=0x20      |
+| fan_off(6)   | N/A         | 0x32, arg0=0, arg1=6      | 0x31, arg2=0, arg1=0x20      |
+| fan_speed(6) | N/A         | 0x32, arg0=1..3, arg1=6   | 0x31, arg2=1..3, arg1=0x20   |
 | fan_dir      | N/A         | 0x15, arg0=0..1   | 0x15, arg1=0..1   |
 
 NOTE: the cmd code given are hexa codes, **you have to translate them into decimal for use in HA service**, use Windows Calculator in programmer mode.
@@ -126,7 +132,7 @@ Example custom commands:
   ```
   * custom command parameters: {type: 0, index: 0, cmd: 50, arg0: 5, arg1: 6, arg2: 0, arg3: 0}.
 
-Note that the Fan Gear command seems to be better than Fan Level as it gives 6 levels instead of 3, but never managed to have it working on v2...
+Note that the Fan Gear command is the same as Fan Level but it gives 6 levels instead of 3. Depend on the device to be controlled.
 
 ### FanLamp v2 (v2 and v3)
 * Base source available [HERE](https://gist.github.com/aronsky/f433de654f008fedb5161e08eb32c33e) and [HERE](https://gist.github.com/aronsky/f2d8afab134d15f34256187a82a53a9c)
@@ -157,6 +163,6 @@ Example custom commands:
     ...
   }  
   ```
-  * custom command parameters: {type: 0, index: 0, cmd: 49, arg0: 0, arg1: 0, arg2: 3, arg3: 0}
+  * custom command parameters: {type: 0, index: 0, cmd: 49, arg0: 0, arg1: 32, arg2: 3, arg3: 0}
 
-Note that arg1 should take the 'generic_flag' value, but no idea how to build this one (this is where the '**guess**' happens), it would probably allow to use the equivalent of 'Gear' for v1 and a 6 levels command instead of the 3 levels command.
+Note that arg1 should take the 'generic_flag' value, but no idea how to build this one, this is where the '**guess**' happens: after 31 unsuccessful tries, the 32nd worked!

@@ -12,6 +12,11 @@ class BleAdvFan : public fan::Fan, public BleAdvEntity
   void dump_config() override;
   fan::FanTraits get_traits() override;
   void control(const fan::FanCall &call) override;
+
+  void set_speed_count(uint8_t speed_count) { this->speed_count_ = speed_count; }
+
+protected:
+  uint8_t speed_count_;
 };
 
 } //namespace bleadvcontroller
