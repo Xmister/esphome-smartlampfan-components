@@ -93,6 +93,10 @@ class BleAdvController : public Component, public EntityBase
     .appearance = 0x00,
     .manufacturer_len = 0,
     .p_manufacturer_data = nullptr,
+    .service_data_len = 0,
+    .p_service_data = nullptr,
+    .service_uuid_len = 0,
+    .p_service_uuid = nullptr,
     .flag = (ESP_BLE_ADV_FLAG_LIMIT_DISC | ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_DMT_CONTROLLER_SPT),
   };
 

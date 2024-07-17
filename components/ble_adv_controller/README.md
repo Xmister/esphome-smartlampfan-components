@@ -92,11 +92,4 @@ If the minimum brightness is too bright, and you know that your light can go dar
 
 ## For the very tecki ones
 
-If you want to discover new features for your lamp and that you are able to understand the code of this component as well as the code of the applications that generate commands, you can try to send custom commands specifying the parameters manually using the api service <device name>_cmd_<controller_id> with the following parameters:
-* type: 256 by default (0x100), a priori it has no incidence, but who knows
-* index: 0 by default, should be changed to control other lights than the main one
-* cmd: 16 to switch on the light (for a smartlamp_pro controller... 17 to switch off)
-* arg0 to arg3: the parameters of the command
-
-Note that the 'encoding' and 'variant' are defined by the controller.
-You can also generate custom buttons for the command you discovered.
+If you want to discover new features for your lamp and that you are able to understand the code of this component as well as the code of the applications that generate commands, you can try to send custom commands, details [here](CUSTOM.md). 
