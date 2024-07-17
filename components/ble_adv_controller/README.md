@@ -1,4 +1,4 @@
-# ble_adv_light
+# ble_adv_controller
 
 ## Known issues
 
