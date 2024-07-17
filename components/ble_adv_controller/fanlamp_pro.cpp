@@ -1,5 +1,6 @@
 #include "fanlamp_pro.h"
 #include <mbedtls/aes.h>
+#include <arpa/inet.h>
 
 
 namespace esphome {

@@ -1,5 +1,6 @@
 #include "ble_adv_controller.h"
 #include "esphome/core/log.h"
+#include "esphome/core/hal.h"
 
 namespace esphome {
 namespace bleadvcontroller {
