@@ -17,7 +17,6 @@ void BleAdvController::setup() {
 #ifdef USE_API
   register_service(&BleAdvController::on_pair, "pair_" + this->get_object_id());
   register_service(&BleAdvController::on_unpair, "unpair_" + this->get_object_id());
-  register_service(&BleAdvController::on_cmd, "cmd_" + this->get_object_id(), {"type", "index", "cmd", "arg0", "arg1", "arg2", "arg3"});
 #endif
   // defaulting to built-in hash from id or name
   if (this->forced_id_ == 0) {
@@ -41,18 +40,6 @@ void BleAdvController::on_unpair() {
   Command cmd(CommandType::UNPAIR);
   this->enqueue(cmd);
 }
-
-void BleAdvController::on_cmd(int type, int index, int cmd_type, int arg0, int arg1, int arg2, int arg3) {
-  Command cmd(CommandType::CUSTOM);
-  cmd.type_ = type;
-  cmd.index_ = index;
-  cmd.args_[0] = cmd_type;
-  cmd.args_[1] = arg0;
-  cmd.args_[2] = arg1;
-  cmd.args_[3] = arg2;
-  cmd.args_[4] = arg3;
-  this->enqueue(cmd);
-}
 #endif
 
 void BleAdvController::enqueue(Command &cmd) {
@@ -71,6 +58,7 @@ void BleAdvController::loop() {
     // no on going command advertised by this controller
     // check if any to advertise and no other controller is already advertising data
     if(!this->commands_.empty() && !IsBleAdvAdvertisingUsed) {
+      ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ble_gap_stop_advertising());
       // Prevent other controllers to advertise
       IsBleAdvAdvertisingUsed = true;
       this->adv_start_time_ = now;

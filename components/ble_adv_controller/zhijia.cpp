@@ -155,12 +155,12 @@ unsigned char *stage2(unsigned char *d, unsigned int n, unsigned int md) {
       in_w3 = uVar5 << 1;
       lVar3 += -1;
       *pbVar2 =
-          (uint8_t)(uVar4 >> 7) & 1 |
-          (uint8_t)((uVar4 >> 6 & 1 |
-                     (uVar4 >> 5 & 1 |
-                      ((uVar4 & 0xff) >> 4 & 1 |
-                       (uVar4 >> 3 & 1 |
-                        (uVar4 & 2 | (uVar4 & 1) << 2 | (uVar4 & 0xff) >> 2 & 1)
+          ((uint8_t)(uVar4 >> 7) & 1) |
+          (uint8_t)(((uVar4 >> 6 & 1) |
+                     ((uVar4 >> 5 & 1) |
+                      (((uVar4 & 0xff) >> 4 & 1) |
+                       ((uVar4 >> 3 & 1) |
+                        ((uVar4 & 2) | ((uVar4 & 1) << 2) | ((uVar4 & 0xff) >> 2 & 1))
                             << 1)
                            << 1)
                           << 1)
@@ -236,7 +236,7 @@ void whitening_encode(unsigned char *buffer, int length, unsigned int *seed) {
     iVar4 = 0;
     for (uVar3 = 0; uVar3 != 8; uVar3 += 1) {
       uVar2 = whitening_output(seed);
-      iVar4 += (uVar2 ^ bVar1 >> (uVar3 & 0xff) & 1) << (uVar3 & 0xff);
+      iVar4 += (uVar2 ^ (bVar1 >> (uVar3 & 0xff) & 1)) << (uVar3 & 0xff);
     }
     *(char *)(buffer + iVar5) = (char)iVar4;
   }

@@ -9,6 +9,8 @@
 #include <esp_gap_ble_api.h>
 #include <vector>
 #include <queue>
+#define MBEDTLS_AES_ALT
+#include <mbedtls/aes.h>
 
 namespace esphome {
 namespace bleadvcontroller {
@@ -64,7 +66,6 @@ class BleAdvController : public Component, public EntityBase
   // Services
   void on_pair();
   void on_unpair();
-  void on_cmd(int type, int index, int cmd, int arg0, int arg1, int arg2, int arg3);
 #endif
 
   void enqueue(Command &cmd);

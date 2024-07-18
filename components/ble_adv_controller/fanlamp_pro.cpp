@@ -82,7 +82,7 @@ uint16_t sign(uint8_t* buf, uint8_t tx_count, uint8_t seed) {
 
 void v2_whiten(uint8_t *buf, uint8_t size, uint8_t seed, uint8_t salt) {
   for (uint8_t i = 0; i < size; ++i) {
-    buf[i] ^= XBOXES[(seed + i + 9) & 0x1f + (salt & 0x3) * 0x20];
+    buf[i] ^= XBOXES[(seed + i + 9) & (0x1f + (salt & 0x3) * 0x20)];
     buf[i] ^= seed;
   }
 }
