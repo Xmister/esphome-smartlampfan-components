@@ -13,13 +13,17 @@ from .. import (
     BleAdvEntity,
 )
 
+from ..const import (
+    CONF_BLE_ADV_SPEED_COUNT,
+)
+
 BleAdvFan = bleadvcontroller_ns.class_('BleAdvFan', fan.Fan, BleAdvEntity)
 
 CONFIG_SCHEMA = cv.All(
     fan.FAN_SCHEMA.extend(
         {
             cv.GenerateID(CONF_OUTPUT_ID): cv.declare_id(BleAdvFan),
-            cv.Optional("speed_count", default=3): cv.one_of(0,3,6),
+            cv.Optional(CONF_BLE_ADV_SPEED_COUNT, default=3): cv.one_of(0,3,6),
         }
     ).extend(ENTITY_BASE_CONFIG_SCHEMA),
 )
@@ -29,4 +33,4 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_OUTPUT_ID])
     await entity_base_code_gen(var, config)
     await fan.register_fan(var, config)
-    cg.add(var.set_speed_count(config["speed_count"]))
+    cg.add(var.set_speed_count(config[CONF_BLE_ADV_SPEED_COUNT]))

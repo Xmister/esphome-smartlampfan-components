@@ -15,6 +15,7 @@ from esphome.cpp_helpers import setup_entity
 from .const import (
     CONF_BLE_ADV_CONTROLLER_ID,
     CONF_BLE_ADV_ENCODING,
+    CONF_BLE_ADV_FORCED_ID,
 )
 
 
@@ -52,6 +53,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_VARIANT, default="v3"): cv.enum(CONTROLLER_VARIANTS, lower=True),
             cv.Optional(CONF_DURATION, default=100): cv.positive_int,
             cv.Optional(CONF_REVERSED, default=False): cv.boolean,
+            cv.Optional(CONF_BLE_ADV_FORCED_ID, default=0): cv.hex_uint32_t,
         }
     ),
     cv.only_on([PLATFORM_ESP32]),
@@ -80,5 +82,6 @@ async def to_code(config):
     await setup_entity(var, config)
     cg.add(var.set_tx_duration(config[CONF_DURATION]))
     cg.add(var.set_reversed(config[CONF_REVERSED]))
+    cg.add(var.set_forced_id(config[CONF_BLE_ADV_FORCED_ID]))
 
 

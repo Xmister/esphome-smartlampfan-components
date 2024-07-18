@@ -49,7 +49,14 @@ ble_adv_controller:
     variant: v3
     # the duration during which the command is sent. Increasing this parameter will make the combination of commands slower, but it may be needed if your light is taking time to process a command
     duration: 500
-    # reversed: true
+    # reversed: reversing the cold / warm at encoding time, needed for some controllers
+    # default to false
+    reversed: false
+    # forced_id: provide the 4 bytes identifier key extracted from your app phone traffic 
+    # to share the same key than the phone
+    # example: 0xBFF62757
+    # default to 0: use the hash id computed by esphome from the id/name of the controller
+    forced_id: 0
 
 light:
   - platform: ble_adv_controller
@@ -64,7 +71,8 @@ light:
     # just test your lamp by decreasing the brightness percent by percent. 
     # when it switches off, you can find the 'cw' value in the logs, add 1 and you have your setting
     min_brightness: 21
-    # default_transition_length: this is a feature of esphome light to perform smooth transitions, but not adapted to this kind of lights. to be setup to 0s
+    # default_transition_length: this is a feature of esphome light to perform smooth transitions
+    # but not adapted to this kind of lights. to be setup to 0s
     default_transition_length: 0s
 
   - platform: ble_adv_controller

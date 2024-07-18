@@ -58,6 +58,7 @@ class BleAdvController : public Component, public EntityBase
   
   void set_tx_duration(uint32_t tx_duration) { this->tx_duration_ = tx_duration; }
   void set_reversed(bool reversed) { this->reversed_ = reversed; }
+  void set_forced_id(uint32_t forced_id) { this->forced_id_ = forced_id; }
 
 #ifdef USE_API
   // Services
@@ -78,12 +79,15 @@ class BleAdvController : public Component, public EntityBase
 
   uint32_t tx_duration_;
   bool reversed_;
+  uint32_t forced_id_ = 0;
 
   std::queue<uint8_t *> commands_;
 
   // Being advertised data properties
   uint8_t tx_count_ = 0;
   uint32_t adv_start_time_ = 0;
+
+  // non static to allow customization by child if needed
   esp_ble_adv_data_t adv_data_ = {
     .set_scan_rsp = false,
     .include_name = false,
@@ -100,6 +104,7 @@ class BleAdvController : public Component, public EntityBase
     .flag = (ESP_BLE_ADV_FLAG_LIMIT_DISC | ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_DMT_CONTROLLER_SPT),
   };
 
+  // non static to allow customization by child if needed
   esp_ble_adv_params_t adv_params_ = {
     .adv_int_min = 0x20,
     .adv_int_max = 0x20,

@@ -17,3 +17,5 @@ CONF_BLE_ADV_COMMANDS = {
   "fan_speed" : {CONF_BLE_ADV_CMD: 32, CONF_BLE_ADV_NB_ARGS : 1},
   "fan_dir" : {CONF_BLE_ADV_CMD: 33, CONF_BLE_ADV_NB_ARGS : 1},
 }
+CONF_BLE_ADV_SPEED_COUNT = "speed_count"
+CONF_BLE_ADV_FORCED_ID = "forced_id"
