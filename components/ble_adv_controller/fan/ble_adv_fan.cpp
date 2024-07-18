@@ -23,35 +23,59 @@ void BleAdvFan::dump_config() {
   BleAdvEntity::dump_config_base(TAG);
 }
 
-void BleAdvFan::control(const fan::FanCall &call) {
-  ESP_LOGD(TAG, "BleAdvFan::control called");
-  bool stopped = false;
-  if (call.get_speed().has_value() && (this->speed != *call.get_speed())) {
-    // Speed change OR Start at speed
-    ESP_LOGD(TAG, "BleAdvFan::control - setup speed %d", *call.get_speed());
-    this->command(CommandType::FAN_SPEED, (uint8_t)*call.get_speed(), this->speed_count_);
-    this->speed = *call.get_speed();
-    this->state = true;
+void BleAdvFan::setup() {
+  auto restore = this->restore_state_();
+  if (restore.has_value()) {
+    restore->apply(*this);
   }
-  else if (call.get_state().has_value() && (this->state != *call.get_state())) {
-    // No Speed change but state change
-    ESP_LOGD(TAG, "BleAdvFan::control - toggle");
-    this->command(CommandType::FAN_OFF);
-    this->state = *call.get_state();
-    // reset direction on stop, as this is the fan behaviour
-    if(!this->state) {
-      this->direction = fan::FanDirection::FORWARD;
+}
+
+void BleAdvFan::loop() {
+  if (this->init_done) {
+    return;
+  }
+  if (esphome::millis() > 5000) {
+    this->init_done = true;
+    auto restore = this->restore_state_();
+    if (restore.has_value()) {
+      this->_control(restore->to_call(*this), true);
     }
   }
-  if (call.get_direction().has_value() && (this->direction != *call.get_direction())) {
-    // Change of direction
-    bool isFwd = *call.get_direction() == fan::FanDirection::FORWARD;
-    ESP_LOGD(TAG, "BleAdvFan::control - setup direction %s", (isFwd ? "fwd":"rev"));
-    this->command(CommandType::FAN_DIR, isFwd);
-    this->direction = *call.get_direction();
-  }
+}
 
+void BleAdvFan::_write_speed() {
+  this->command(CommandType::FAN_SPEED, this->speed, this->speed_count_);
+}
+
+void BleAdvFan::control(const fan::FanCall &call) {
+  this->_control(call, false);
+}
+
+void BleAdvFan::_control(const fan::FanCall &call, bool force) {
+
+  ESP_LOGD(TAG, "write_state");
+  if (call.get_speed().has_value()) {
+    if (this->speed != *call.get_speed() || !this->state || force) {
+      this->speed = *call.get_speed();
+      this->state = true;
+      this->_write_speed();
+    }
+  } else if (call.get_state().has_value()) {
+    if (this->state != *call.get_state() || force) {
+      this->state = *call.get_state();
+      if (this->state) {
+        this->_write_speed();
+      } else {
+        this->command(CommandType::FAN_OFF);
+      }
+    }
+  }
+  if (call.get_direction().has_value()) {
+    this->direction = *call.get_direction();
+    this->command(CommandType::FAN_DIR, this->direction == esphome::fan::FanDirection::FORWARD);
+  }
   this->publish_state();
+
 }
 
 } // namespace bleadvcontroller
