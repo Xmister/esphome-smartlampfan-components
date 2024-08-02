@@ -65,7 +65,7 @@ void BleAdvFan::_control(const fan::FanCall &call, bool force) {
       this->state = *call.get_state();
       if (this->state) {
         this->_write_speed();
-      } else {
+      } else if (!force) {
         this->command(CommandType::FAN_OFF);
       }
     }
