@@ -16,7 +16,7 @@ from esphome.const import (
     CONF_REVERSED,
     CONF_TRIGGER_ID,
 )
-from esphome.cpp_helpers import setup_entity
+from esphome.core.entity_helpers import setup_entity
 
 from ..ble_adv_handler import (
     DEVICE_BASE_CONFIG_SCHEMA,
@@ -95,10 +95,10 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
-async def entity_base_code_gen(var, config):
+async def entity_base_code_gen(var, config, platform):
     await cg.register_parented(var, config[CONF_BLE_ADV_CONTROLLER_ID])
     await cg.register_component(var, config)
-    await setup_entity(var, config)
+    await setup_entity(var, config, platform)
     cg.add(var.init())
     cg.add(var.set_index(config[CONF_INDEX]))
 
