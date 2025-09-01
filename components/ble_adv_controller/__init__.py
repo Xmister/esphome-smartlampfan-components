@@ -106,7 +106,7 @@ async def entity_base_code_gen(var, config, platform):
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     cg.add(var.set_setup_priority(300))  # start after Bluetooth
-    await setup_ble_adv_device(var, config)
+    await setup_ble_adv_device(var, config, "ble_adv_controller")
     cg.add(var.set_min_tx_duration(config[CONF_DURATION], 100, 1000, 10))
     cg.add(var.set_max_tx_duration(config[CONF_BLE_ADV_MAX_DURATION]))
     cg.add(var.set_seq_duration(config[CONF_BLE_ADV_SEQ_DURATION]))
