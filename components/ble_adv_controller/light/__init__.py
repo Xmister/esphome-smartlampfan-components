@@ -121,8 +121,6 @@ async def to_code(config):
     if queue_entity_register is not None:
         queue_entity_register("light", config)
         CORE.register_platform_component("light", var)
-    else:
-        cg.add(cg.App.register_light(var))
     await light.setup_light_core_(var, config, var)
     if config[CONF_TYPE] == "onoff":
         cg.add(var.set_traits())
