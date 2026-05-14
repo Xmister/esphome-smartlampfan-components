@@ -7,7 +7,7 @@ namespace ble_adv_remote {
 static const char *TAG = "ble_adv_remote";
 
 void BleAdvRemote::setup() {
-#ifdef USE_API
+#if defined(USE_API) && defined(USE_API_CUSTOM_SERVICES) && defined(USE_API_USER_DEFINED_ACTIONS)
   register_service(&BleAdvRemote::unpair, "unpair_" + this->get_object_id());
 #endif
 }

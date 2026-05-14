@@ -15,6 +15,7 @@
 #include <freertos/semphr.h>
 
 #include <esp_gap_ble_api.h>
+#include <type_traits>
 #include <vector>
 #include <list>
 
@@ -260,7 +261,6 @@ using BleAdvBaseDecodedTrigger = Trigger<const BleAdvDecoded_t &>;
   It owns the centralized listener dispatching the listened / decoded commands
  */
 class BleAdvHandler : public Component,
-                      public esp32_ble::GAPEventHandler,
                       public Parented<esp32_ble::ESP32BLE>
 #ifdef USE_API
     ,
@@ -380,11 +380,14 @@ template<class BaseEntity> class BleAdvDynConfig : public BaseEntity {
   void init(const char *name, const StringRef &parent_name) {
     // Due to the use of sh... StringRef, we are forced to keep a ref on the built string...
     this->ref_name_ = std::string(parent_name) + " - " + std::string(name);
-    this->set_object_id(this->ref_name_.c_str());
-    this->set_name(this->ref_name_.c_str());
-    this->set_entity_category(EntityCategory::ENTITY_CATEGORY_CONFIG);
+    this->configure_entity_(
+        this->ref_name_.c_str(), fnv1_hash(this->ref_name_), 1U << ENTITY_FIELD_ENTITY_CATEGORY_SHIFT);
     this->sub_init();
-    this->publish_state(this->state);
+    if constexpr (std::is_base_of_v<select::Select, BaseEntity>) {
+      this->publish_state(this->current_option().c_str());
+    } else {
+      this->publish_state(this->state);
+    }
   }
 
   // register to App and restore from config / saved data
@@ -429,7 +432,7 @@ class BleAdvDevice : public Component,
   void set_forced_id(const std::string &str_id) { this->params_.id_ = fnv1_hash(str_id); }
   void set_index(uint8_t index) { this->params_.index_ = index; }
   void init(const std::string &encoding, const std::string &variant);
-  void refresh_encoder(std::string id, size_t index);
+  void refresh_encoder(size_t index);
 
   bool is_elligible(const std::string &enc_id, const ControllerParam_t &cont);
   virtual void publish(const BleAdvGenCmd &gen_cmd, bool apply_command) = 0;

@@ -302,7 +302,7 @@ void BleAdvEncoder::log_buffer(const uint8_t *buf, size_t len, const char *msg) 
 }
 
 void BleAdvHandler::setup() {
-#ifdef USE_API
+#if defined(USE_API) && defined(USE_API_CUSTOM_SERVICES) && defined(USE_API_USER_DEFINED_ACTIONS)
   register_service(&BleAdvHandler::on_raw_decode, "raw_decode", {"raw"});
   register_service(&BleAdvHandler::on_raw_listen, "raw_listen", {"raw"});
 #endif
@@ -596,12 +596,12 @@ void BleAdvDevice::init(const std::string &encoding, const std::string &variant)
   this->select_encoding_.state = BleAdvEncoder::ID(encoding, variant);
   this->encoders_.clear();
   this->encoders_.push_back(this->get_parent()->get_encoder(this->select_encoding_.state));
-  this->select_encoding_.add_on_state_callback(
-      std::bind(&BleAdvDevice::refresh_encoder, this, std::placeholders::_1, std::placeholders::_2));
+  this->select_encoding_.add_on_state_callback(std::bind(&BleAdvDevice::refresh_encoder, this, std::placeholders::_1));
 }
 
-void BleAdvDevice::refresh_encoder(std::string id, size_t index) {
+void BleAdvDevice::refresh_encoder(size_t index) {
   this->encoders_.clear();
+  std::string id = this->select_encoding_.current_option();
   if (index == 0) {
     // "All" encoder selected, refresh from list, avoiding "All"
     for (auto &aid : this->select_encoding_.traits.get_options()) {

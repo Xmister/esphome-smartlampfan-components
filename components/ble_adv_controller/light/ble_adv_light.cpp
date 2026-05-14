@@ -247,7 +247,7 @@ void BleAdvLightRGB::control() {
   // They are mutually exclusive at translator level
   // Option 1: Global RGB - use the esphome feature to compute the effective RGB, but we could do basic multiplication
   float red, green, blue;
-  this->current_values.as_rgb(&red, &green, &blue, 0, false);
+  this->current_values.as_rgb(&red, &green, &blue);
   ESP_LOGD(TAG, "Updating raw r: %.0f%%, g: %.0f%%, b: %.0f%%", red * 100, green * 100, blue * 100);
   this->command(CommandType::LIGHT_RGB_FULL, red, green, blue);
 

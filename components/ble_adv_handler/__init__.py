@@ -1,6 +1,10 @@
 from esphome import automation
 import esphome.codegen as cg
-from esphome.components.esp32_ble import CONF_BLE_ID, ESP32BLE
+from esphome.components.esp32_ble import (
+    CONF_BLE_ID,
+    ESP32BLE,
+    register_gap_event_handler,
+)
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ID,
@@ -218,5 +222,5 @@ async def to_code(config):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(trigger, [(BleAdvRawConstRef, "x")], conf)
     parent = await cg.get_variable(config[CONF_BLE_ID])
-    cg.add(parent.register_gap_event_handler(var))
+    register_gap_event_handler(parent, var)
     cg.add(var.set_parent(parent))

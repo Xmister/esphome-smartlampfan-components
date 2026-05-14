@@ -15,7 +15,7 @@ void BleAdvController::set_min_tx_duration(int tx_duration, int min, int max, in
 }
 
 void BleAdvController::setup() {
-#ifdef USE_API
+#if defined(USE_API) && defined(USE_API_CUSTOM_SERVICES) && defined(USE_API_USER_DEFINED_ACTIONS)
   register_service(&BleAdvController::pair, "pair_" + this->get_object_id());
   register_service(&BleAdvController::unpair, "unpair_" + this->get_object_id());
   register_service(&BleAdvController::all_on, "all_on_" + this->get_object_id());
