@@ -198,7 +198,6 @@ CONFIG_SCHEMA = cv.All(
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-    cg.add(var.set_setup_priority(300))  # start after Bluetooth
     for conf_tr in config.get(CONF_BLE_ADV_TRANSLATORS, []):
         _ = await translator_to_code(conf_tr)
     for conf_en in config.get(CONF_BLE_ADV_CODECS, []):

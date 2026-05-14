@@ -271,6 +271,7 @@ class BleAdvHandler : public Component,
   // component handling
   void setup() override;
   void loop() override;
+  float get_setup_priority() const override { return setup_priority::AFTER_BLUETOOTH; }
 
   // Options
   void set_logging(bool raw, bool cmd, bool config) {
@@ -432,6 +433,7 @@ class BleAdvDevice : public Component,
 #endif
 {
  public:
+  float get_setup_priority() const override { return setup_priority::AFTER_BLUETOOTH; }
   void set_forced_id(uint32_t forced_id) { this->params_.id_ = forced_id; }
   void set_forced_id(const std::string &str_id) { this->params_.id_ = fnv1_hash(str_id); }
   void set_index(uint8_t index) { this->params_.index_ = index; }

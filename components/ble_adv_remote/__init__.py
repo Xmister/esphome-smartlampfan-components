@@ -61,7 +61,6 @@ CONFIG_SCHEMA = cv.All(
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-    cg.add(var.set_setup_priority(300))  # start after Bluetooth
     await setup_ble_adv_device(var, config, "ble_adv_remote")
     cg.add(var.set_toggle(config[CONF_BLE_ADV_CMD_AS_TOGGLE]))
     cg.add(var.set_level_count(config[CONF_BLE_ADV_LEVEL_COUNT]))
