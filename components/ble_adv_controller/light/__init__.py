@@ -26,6 +26,8 @@ from ..const import (
     CONF_BLE_ADV_SPLIT_DIM_RGB,
 )
 
+AUTO_LOAD = ["light", "ble_adv_handler"]
+
 BleAdvLightBase = bleadvcontroller_ns.class_(
     "BleAdvLightBase", light.LightOutput, light.LightState, BleAdvEntity
 )
@@ -110,7 +112,6 @@ CONFIG_SCHEMA = cv.All(
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await entity_base_code_gen(var, config, "light")
-    cg.add(cg.App.register_light(var))
     await light.setup_light_core_(var, config, var)
     if config[CONF_TYPE] == "onoff":
         cg.add(var.set_traits())

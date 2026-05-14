@@ -309,6 +309,11 @@ class BleAdvHandler : public Component,
   void register_decoded_trigger(BleAdvBaseDecodedTrigger *trigger) { this->decoded_triggers_.push_back(trigger); }
   void register_raw_trigger(BleAdvBaseRawTrigger *trigger) { this->raw_triggers_.push_back(trigger); }
 
+  /**
+    Listening to ADV
+   */
+  void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
+
  protected:
   // ref to registered encoders
   std::vector<BleAdvEncoder *> encoders_;
@@ -340,7 +345,6 @@ class BleAdvHandler : public Component,
   /**
     Listening to ADV
    */
-  void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
   bool scan_started_{false};
   SemaphoreHandle_t scan_result_lock_;
 
