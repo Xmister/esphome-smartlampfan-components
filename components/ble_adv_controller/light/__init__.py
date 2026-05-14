@@ -111,7 +111,7 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await entity_base_code_gen(var, config, "light")
     cg.add(cg.App.register_light(var))
-    await light.setup_light_core_(var, var, config)
+    await light.setup_light_core_(var, config, var)
     if config[CONF_TYPE] == "onoff":
         cg.add(var.set_traits())
     elif config[CONF_TYPE] == "cww":
