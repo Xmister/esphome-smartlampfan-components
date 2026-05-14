@@ -27,20 +27,31 @@ from ..const import (
 
 BleAdvFan = bleadvcontroller_ns.class_("BleAdvFan", fan.Fan, BleAdvEntity)
 
-CONFIG_SCHEMA = cv.All(
-    fan.FAN_SCHEMA.extend(
+if hasattr(fan, "fan_schema"):
+    FAN_BASE_SCHEMA = fan.fan_schema(
+        BleAdvFan, default_restore_mode="RESTORE_DEFAULT_OFF"
+    )
+else:
+    legacy_fan_schema = getattr(fan, "FAN_SCHEMA", getattr(fan, "_FAN_SCHEMA"))
+    FAN_BASE_SCHEMA = legacy_fan_schema.extend(
         {
             cv.GenerateID(): cv.declare_id(BleAdvFan),
+            # Keep the historical default for this external component.
+            cv.Optional(CONF_RESTORE_MODE, default="RESTORE_DEFAULT_OFF"): cv.enum(
+                fan.RESTORE_MODES, upper=True, space="_"
+            ),
+        }
+    )
+
+CONFIG_SCHEMA = cv.All(
+    FAN_BASE_SCHEMA.extend(
+        {
             cv.Optional(CONF_BLE_ADV_SPEED_COUNT, default=6): cv.one_of(0, 3, 6),
             cv.Optional(CONF_BLE_ADV_DIRECTION_SUPPORTED, default=True): cv.boolean,
             cv.Optional(CONF_BLE_ADV_OSCILLATION_SUPPORTED, default=False): cv.boolean,
             cv.Optional(
                 CONF_BLE_ADV_FORCED_REFRESH_ON_START, default=False
             ): cv.boolean,
-            # override default value for restore mode, to always restore as it was if possible
-            cv.Optional(CONF_RESTORE_MODE, default="RESTORE_DEFAULT_OFF"): cv.enum(
-                fan.RESTORE_MODES, upper=True, space="_"
-            ),
         }
     ).extend(ENTITY_BASE_CONFIG_SCHEMA),
 )
