@@ -440,6 +440,7 @@ class BleAdvDevice : public Component,
  protected:
   ControllerParam_t params_;
   BleAdvSelect select_encoding_;
+  std::vector<std::string> select_encoding_options_;
   std::vector<BleAdvEncoder *> encoders_;
 };
 

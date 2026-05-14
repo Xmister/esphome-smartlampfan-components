@@ -2,11 +2,25 @@
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/application.h"
+#include <esp_bt.h>
 
 namespace esphome {
 namespace ble_adv_handler {
 
 static const char *TAG = "ble_adv_handler";
+
+namespace {
+
+void set_select_options(select::SelectTraits &traits, const std::vector<std::string> &options) {
+  FixedVector<const char *> trait_options;
+  trait_options.init(options.size());
+  for (const auto &option : options) {
+    trait_options.push_back(option.c_str());
+  }
+  traits.set_options(trait_options);
+}
+
+}  // namespace
 
 std::string BleAdvParam::str() const {
   return esphome::format_hex_pretty(this->get_const_full_buf(), this->get_full_len());
@@ -563,13 +577,12 @@ void BleAdvSelect::control(const std::string &value) {
 }
 
 void BleAdvSelect::sub_init() {
-  App.register_select(this);
   this->rtc_ = global_preferences->make_preference<uint32_t>(this->get_object_id_hash());
   uint32_t restored;
   if (this->rtc_.load(&restored)) {
     for (auto &opt : this->traits.get_options()) {
       if (fnv1_hash(opt) == restored) {
-        this->state = opt;
+        this->publish_state(opt);
         return;
       }
     }
@@ -582,29 +595,29 @@ void BleAdvNumber::control(float value) {
 }
 
 void BleAdvNumber::sub_init() {
-  App.register_number(this);
   this->rtc_ = global_preferences->make_preference<float>(this->get_object_id_hash());
   float restored;
   if (this->rtc_.load(&restored)) {
-    this->state = restored;
+    this->publish_state(restored);
   }
 }
 
 void BleAdvDevice::init(const std::string &encoding, const std::string &variant) {
   this->get_parent()->register_device(this);
-  this->select_encoding_.traits.set_options(this->get_parent()->get_ids(encoding));
-  this->select_encoding_.state = BleAdvEncoder::ID(encoding, variant);
+  this->select_encoding_options_ = this->get_parent()->get_ids(encoding);
+  set_select_options(this->select_encoding_.traits, this->select_encoding_options_);
+  this->select_encoding_.publish_state(BleAdvEncoder::ID(encoding, variant));
   this->encoders_.clear();
-  this->encoders_.push_back(this->get_parent()->get_encoder(this->select_encoding_.state));
+  this->encoders_.push_back(this->get_parent()->get_encoder(this->select_encoding_.current_option().c_str()));
   this->select_encoding_.add_on_state_callback(std::bind(&BleAdvDevice::refresh_encoder, this, std::placeholders::_1));
 }
 
 void BleAdvDevice::refresh_encoder(size_t index) {
   this->encoders_.clear();
-  std::string id = this->select_encoding_.current_option();
+  std::string id = this->select_encoding_.current_option().c_str();
   if (index == 0) {
     // "All" encoder selected, refresh from list, avoiding "All"
-    for (auto &aid : this->select_encoding_.traits.get_options()) {
+    for (auto &aid : this->select_encoding_options_) {
       if (aid != id) {
         this->encoders_.push_back(this->get_parent()->get_encoder(aid));
       }
