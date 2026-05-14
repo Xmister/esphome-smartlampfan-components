@@ -1,9 +1,5 @@
-# BLE ADV ESPHome Components
-
-Custom components for ESPHome using BLE Advertising.
-
-# WARNING - DEPRECATED SOON - MIGRATE TO HA INTEGRATION
-Those components will very soon **no more be supported**, please migrate to the **[Home Assistant custom integration](https://github.com/NicoIIT/ha-ble-adv)**.
+# REPOSITORY ARCHIVED - MIGRATE TO HA INTEGRATION
+Please migrate to the **[Home Assistant custom integration](https://github.com/NicoIIT/ha-ble-adv)**.
 
 The Home Assistant integration is very easy to use, it can either use the Bluetooth stack of the Home Assistant Host or an ESPHome based [ble_adv_proxy](https://github.com/NicoIIT/esphome-ble_adv_proxy).
 
@@ -14,6 +10,15 @@ The __migration__ is very easy:
 * Remove everything related to those components on your ESP configuration, keeping only the `ble_adv_proxy` part if needed. You can even use a `bluetooth_proxy` with it: it is fully compatible.
 
 Should you think it is missing features do not hesitate to open [feature requests](https://github.com/NicoIIT/ha-ble-adv/issues/new/choose)!
+#
+#
+#
+#
+#
+#
+# BLE ADV ESPHome Components
+
+Custom components for ESPHome using BLE Advertising.
 
 ## Requirements
 Those components are [ESPHome external component](https://esphome.io/components/external_components.html). In order to use them you will need to have:
