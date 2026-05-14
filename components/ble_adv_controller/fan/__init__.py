@@ -86,7 +86,10 @@ FAN_PUBLISH_STATE_ACTION_SCHEMA = maybe_simple_id(
 
 
 @reg_controller_action(
-    "fan.publish_state", "FanPublishStateAction", FAN_PUBLISH_STATE_ACTION_SCHEMA
+    "fan.publish_state",
+    "FanPublishStateAction",
+    FAN_PUBLISH_STATE_ACTION_SCHEMA,
+    synchronous=True,
 )
 async def fan_publish_state_to_code(config, action_id, template_arg, args):
     paren = await cg.get_variable(config[CONF_ID])

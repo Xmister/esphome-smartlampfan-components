@@ -1,3 +1,5 @@
+import inspect
+
 from esphome import automation
 from esphome.automation import Action, maybe_simple_id, register_action
 import esphome.codegen as cg
@@ -86,8 +88,14 @@ async def init_remote_action(config, action_id, template_arg):
 
 
 def reg_remote_action(name, class_name, schema):
+    kwargs = {}
+    if "synchronous" in inspect.signature(register_action).parameters:
+        kwargs["synchronous"] = True
     return register_action(
-        f"ble_adv_remote.{name}", bleadvremote_ns.class_(class_name, Action), schema
+        f"ble_adv_remote.{name}",
+        bleadvremote_ns.class_(class_name, Action),
+        schema,
+        **kwargs,
     )
 
 

@@ -1,4 +1,5 @@
 import logging
+import inspect
 
 from esphome.automation import (
     Action,
@@ -129,11 +130,15 @@ async def init_controller_action(config, action_id, template_arg):
     return var
 
 
-def reg_controller_action(name, class_name, schema):
+def reg_controller_action(name, class_name, schema, synchronous=True):
+    kwargs = {}
+    if "synchronous" in inspect.signature(register_action).parameters:
+        kwargs["synchronous"] = synchronous
     return register_action(
         f"ble_adv_controller.{name}",
         bleadvcontroller_ns.class_(class_name, Action),
         schema,
+        **kwargs,
     )
 
 
