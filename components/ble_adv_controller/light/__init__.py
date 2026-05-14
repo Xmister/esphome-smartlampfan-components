@@ -13,6 +13,8 @@ from esphome.const import (
     CONF_TYPE,
     CONF_WARM_WHITE_COLOR_TEMPERATURE,
 )
+from esphome.core import CORE
+from esphome.core.entity_helpers import queue_entity_register
 
 from .. import (
     ENTITY_BASE_CONFIG_SCHEMA,
@@ -112,6 +114,8 @@ CONFIG_SCHEMA = cv.All(
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await entity_base_code_gen(var, config, "light")
+    queue_entity_register("light", config)
+    CORE.register_platform_component("light", var)
     await light.setup_light_core_(var, config, var)
     if config[CONF_TYPE] == "onoff":
         cg.add(var.set_traits())

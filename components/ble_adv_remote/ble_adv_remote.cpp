@@ -8,12 +8,18 @@ static const char *TAG = "ble_adv_remote";
 
 void BleAdvRemote::setup() {
 #if defined(USE_API) && defined(USE_API_CUSTOM_SERVICES) && defined(USE_API_USER_DEFINED_ACTIONS)
-  register_service(&BleAdvRemote::unpair, "unpair_" + this->get_object_id());
+  char object_id[OBJECT_ID_MAX_LEN];
+  size_t object_id_len = this->write_object_id_to(object_id, sizeof(object_id));
+  std::string service_name("unpair_");
+  service_name.append(object_id, object_id_len);
+  register_service(&BleAdvRemote::unpair, service_name);
 #endif
 }
 
 void BleAdvRemote::dump_config() {
-  ESP_LOGCONFIG(TAG, "BleAdvRemote '%s'", this->get_object_id().c_str());
+  char object_id[OBJECT_ID_MAX_LEN];
+  this->write_object_id_to(object_id, sizeof(object_id));
+  ESP_LOGCONFIG(TAG, "BleAdvRemote '%s'", object_id);
   ESP_LOGCONFIG(TAG, "  Hash ID '%lX'", this->params_.id_);
   ESP_LOGCONFIG(TAG, "  Index '%d'", this->params_.index_);
 }

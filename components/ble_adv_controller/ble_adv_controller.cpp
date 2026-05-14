@@ -16,21 +16,30 @@ void BleAdvController::set_min_tx_duration(int tx_duration, int min, int max, in
 
 void BleAdvController::setup() {
 #if defined(USE_API) && defined(USE_API_CUSTOM_SERVICES) && defined(USE_API_USER_DEFINED_ACTIONS)
-  register_service(&BleAdvController::pair, "pair_" + this->get_object_id());
-  register_service(&BleAdvController::unpair, "unpair_" + this->get_object_id());
-  register_service(&BleAdvController::all_on, "all_on_" + this->get_object_id());
-  register_service(&BleAdvController::all_off, "all_off_" + this->get_object_id());
-  register_service(&BleAdvController::set_timer, "set_timer_" + this->get_object_id(), {"duration"});
-  register_service(&BleAdvController::custom_cmd_float, "cmd_" + this->get_object_id(),
+  char object_id[OBJECT_ID_MAX_LEN];
+  size_t object_id_len = this->write_object_id_to(object_id, sizeof(object_id));
+  auto make_service_name = [object_id, object_id_len](const char *prefix) {
+    std::string service_name(prefix);
+    service_name.append(object_id, object_id_len);
+    return service_name;
+  };
+  register_service(&BleAdvController::pair, make_service_name("pair_"));
+  register_service(&BleAdvController::unpair, make_service_name("unpair_"));
+  register_service(&BleAdvController::all_on, make_service_name("all_on_"));
+  register_service(&BleAdvController::all_off, make_service_name("all_off_"));
+  register_service(&BleAdvController::set_timer, make_service_name("set_timer_"), {"duration"});
+  register_service(&BleAdvController::custom_cmd_float, make_service_name("cmd_"),
                    {"cmd", "param", "arg0", "arg1", "arg2"});
-  register_service(&BleAdvController::raw_inject, "inject_raw_" + this->get_object_id(), {"raw"});
+  register_service(&BleAdvController::raw_inject, make_service_name("inject_raw_"), {"raw"});
 #endif
   this->select_encoding_.init("Encoding", this->get_name());
   this->number_duration_.init("Duration", this->get_name());
 }
 
 void BleAdvController::dump_config() {
-  ESP_LOGCONFIG(TAG, "BleAdvController '%s'", this->get_object_id().c_str());
+  char object_id[OBJECT_ID_MAX_LEN];
+  this->write_object_id_to(object_id, sizeof(object_id));
+  ESP_LOGCONFIG(TAG, "BleAdvController '%s'", object_id);
   ESP_LOGCONFIG(TAG, "  Hash ID '%lX'", this->params_.id_);
   ESP_LOGCONFIG(TAG, "  Index '%d'", this->params_.index_);
   ESP_LOGCONFIG(TAG, "  Transmission Min Duration: %ld ms", this->get_min_tx_duration());
